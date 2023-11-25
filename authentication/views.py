@@ -6,28 +6,36 @@ from rest_framework import status
 from rest_framework.views import APIView
 from .models import *
 from .serilizers import *
+from core.customrespose import *
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+
+response = CustomResponse()
 # Create your views here.
 class LoginApi(APIView):
     
     def post(self, request):
-        
         email = request.data.get('email')
         password = request.data.get('password')
-        auth = authenticate(username = email, password=password)
+        auth = authenticate(username=email, password=password)
         
         if auth:
-            return Response('Login sucessfull', status= status.HTTP_200_OK)
-        return Response('Validation Error', status=status.HTTP_400_BAD_REQUEST)
+            token, _ = Token.objects.get_or_create(user=auth)
+            return Response(response.successResponse("You have logged in successfully", {"token": token.key}), status=status.HTTP_200_OK)
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
-class UserAPi(APIView):
+class UserAPiView(APIView):
         
     def get(self, request):       
         user_obj = User.objects.all()
-        user_serializer = GetUsersSeriallizers(user_obj, many = True)        
+        user_serializer = GetUsersSeriallizers(user_obj, many = True)   
+        response_data = {
+          'data' : user_serializer.data
+        }     
         if user_obj:
-            return Response(user_serializer.data)
+            return Response(response.successResponse("data view", response_data), status=status.HTTP_200_OK)
         else:
-            return Response('No data found')
+            return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
    
     
     def post(self, request):       
@@ -35,9 +43,12 @@ class UserAPi(APIView):
         
         if user_serializer.is_valid():
             user_serializer.save()
-            return Response(data=user_serializer.data, status=status.HTTP_201_CREATED)
+            response_data = {
+                'data' : user_serializer.data
+            }
+            return Response(response.successResponse("data view", response_data), status=status.HTTP_201_CREATED)           
         else:
-            return Response(data=user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(response.errorResponse("HTTP_400_BAD_REQUEST", user_serializer.errors), status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request, pk):        
         try:
@@ -53,9 +64,56 @@ class UserAPi(APIView):
     
     def delete(self, request, pk):
         try:
-            user_obj = User.objects.all()
+            user_obj = User.objects.get(id=pk)
         except:
             return Response('No data found')
         if user_obj:
             user_obj.delete()
             return Response ('Data Deleted')
+        
+class AddressApiView(APIView):
+    
+    serializer = AddressSerialzers
+    
+    def get(self, request):
+        address_obj = Address.objects.all()
+        address_serializer = self.serializer(address_obj, many=True)
+        if address_obj:
+            return Response(address_serializer.data)
+        else:
+            return Response('No Data Found')
+        
+    def post(self, request):
+        address_serialier = self.serializer(data=request.data)
+        if address_serialier.is_valid():
+            address_serialier.save()
+            return Response(address_serialier.data)
+        return Response(address_serialier.errors)
+        
+    def delete(self, request, pk):
+        address_obj = Address.objects.get(id = pk)
+        if address_obj:
+            address_obj.delete()
+            return Response('data deleted')
+        else:
+            return Response('No data found')
+        
+    def put(self,request,pk):
+        try:
+            address_obj = Address.objects.get(id=pk)
+        except:
+            return Response('No data found')
+        adress_serialier = self.serializer(address_obj, data=request.data)
+        if adress_serialier.is_valid():
+            adress_serialier.save()
+            return Response(adress_serialier.data)
+        else:
+            return Response(adress_serialier.errors)
+            
+class LogoutApiView(APIView):
+
+    def get(self, request):
+        user = request
+        logout(user)
+        response = CustomResponse()
+        return Response(response.successResponse("You have successfully Logged Out"), status=status.HTTP_200_OK)
