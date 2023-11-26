@@ -54,22 +54,22 @@ class UserAPiView(APIView):
         try:
             user_obj = User.objects.get(id=pk)
         except:
-            return Response('Data Not Found!')
+            return Response(response.errorResponse("No Data Found"),status=status.HTTP_404_NOT_FOUND)
         user_serializer = UsersSeriallizers(user_obj, data=request.data)
         if user_serializer.is_valid():
             user_serializer.save()
             return Response(user_serializer.data)
         else:
-            return Response(user_serializer.errors)
+            return Response(response.successResponse("Data Updated", user_serializer.errors), status=status.HTTP_201_CREATED)
     
     def delete(self, request, pk):
         try:
             user_obj = User.objects.get(id=pk)
         except:
-            return Response('No data found')
+            return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
         if user_obj:
             user_obj.delete()
-            return Response ('Data Deleted')
+            return Response(response.successResponse('Data Deleted'), status=status.HTTP_200_OK)
         
 class AddressApiView(APIView):
     
@@ -79,36 +79,36 @@ class AddressApiView(APIView):
         address_obj = Address.objects.all()
         address_serializer = self.serializer(address_obj, many=True)
         if address_obj:
-            return Response(address_serializer.data)
+            return Response(response.successResponse('data view',address_serializer.data), status=status.HTTP_200_OK)
         else:
-            return Response('No Data Found')
+            return Response(response.errorResponse('No Data Found'), status=status.HTTP_404_NOT_FOUND)
         
     def post(self, request):
         address_serialier = self.serializer(data=request.data)
         if address_serialier.is_valid():
             address_serialier.save()
-            return Response(address_serialier.data)
-        return Response(address_serialier.errors)
+            return Response(response.successResponse('data created',address_serialier.data), status=status.HTTP_201_CREATED)
+        return Response(response.errorResponse('validation error',address_serialier.errors),status=status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request, pk):
         address_obj = Address.objects.get(id = pk)
         if address_obj:
             address_obj.delete()
-            return Response('data deleted')
+            return Response(response.successResponse('data deleted'),status=status.HTTP_200_OK)
         else:
-            return Response('No data found')
+            return Response(response.errorResponse('No data found'),status=status.HTTP_404_NOT_FOUND)
         
     def put(self,request,pk):
         try:
             address_obj = Address.objects.get(id=pk)
         except:
-            return Response('No data found')
+            return Response(response.errorResponse('No data found'),status=status.HTTP_404_NOT_FOUND)
         adress_serialier = self.serializer(address_obj, data=request.data)
         if adress_serialier.is_valid():
             adress_serialier.save()
-            return Response(adress_serialier.data)
+            return Response(response.successResponse('data updated',adress_serialier.data), status=status.HTTP_201_CREATED)
         else:
-            return Response(adress_serialier.errors)
+            return Response(response.errorResponse('validation error',adress_serialier.errors),status=status.HTTP_400_BAD_REQUEST)
             
 class LogoutApiView(APIView):
 
