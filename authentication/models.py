@@ -23,6 +23,9 @@ class User(AbstractUser):
     user_type = models.CharField(max_length=50, choices=usertype_list)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return self.first_name
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

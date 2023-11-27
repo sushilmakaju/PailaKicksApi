@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-5*at4d^_de)5u=4khn0s4o=hbshg40ic+svqlm8(e)2^y3txdu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['pailakicksapi.onrender.com']
+ALLOWED_HOSTS = ['pailakicksapi.onrender.com',
+                 '127.0.0.1']
 
 
 # Application definition
