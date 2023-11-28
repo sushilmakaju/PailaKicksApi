@@ -26,8 +26,8 @@ class LoginApi(APIView):
     
 class UserAPiView(APIView):
         
-    def get(self, request, pk):
-        if pk == None:       
+    def get(self, request, pk=None):
+        if pk is None:       
             user_obj = User.objects.all()
             user_serializer = GetUsersSeriallizers(user_obj, many = True)   
             response_data = {
@@ -42,7 +42,8 @@ class UserAPiView(APIView):
             if user_obj:
                 user_serilizer = GetUsersSeriallizers(user_obj)
                 return Response(response.successResponse('data view', user_serilizer.data), status=status.HTTP_200_OK)
-            else: return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
+            else: 
+                return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
    
     
     def post(self, request):       
