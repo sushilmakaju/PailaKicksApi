@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     
     'authentication',
     
+    'shoesapp',
+    
     'rest_framework.authtoken',
     
     'corsheaders',
@@ -141,5 +143,7 @@ REST_FRAMEWORK = {
     ],
 }
 
+MEDIA_URL = '/images/'
+MEDIA_ROOT = BASE_DIR / "images"
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -102,7 +102,7 @@ class AddressApiView(APIView):
         address_obj = Address.objects.get(id = pk)
         if address_obj:
             address_obj.delete()
-            return Response(response.successResponse('data deleted'),status=status.HTTP_200_OK)
+            return Response(response.successResponse('data deleted'),status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(response.errorResponse('No data found'),status=status.HTTP_404_NOT_FOUND)
         
