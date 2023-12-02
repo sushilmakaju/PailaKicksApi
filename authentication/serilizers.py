@@ -16,3 +16,12 @@ class AddressSerialzers(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = '__all__'
+    
+
+class ChangePasswordSerializers(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=60,write_only=True)
+    password2 = serializers.CharField(max_length=60, write_only=True)
+
+    class Meta:
+        model = User  
+        fields = ['password', 'password2']

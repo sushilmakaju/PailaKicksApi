@@ -9,6 +9,8 @@ from .serilizers import *
 from core.customrespose import *
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
+
 
 response = CustomResponse()
 # Create your views here.
@@ -125,3 +127,28 @@ class LogoutApiView(APIView):
         logout(user)
         response = CustomResponse()
         return Response(response.successResponse("You have successfully Logged Out"), status=status.HTTP_200_OK)
+    
+
+
+class changepasswordapiview(APIView):
+    
+     def post(self, request):
+        serializer = ChangePasswordSerializers(data=request.data)
+        if serializer.is_valid():
+            password = serializer.validated_data['password']
+            password2 = serializer.validated_data['password2']
+
+            if password != password2:
+                return Response({'error': 'Password and Confirm Password do not match'}, status=status.HTTP_400_BAD_REQUEST)
+
+            user = request.user  
+            user.set_password(password)
+            user.save()
+
+            return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    
+
+
