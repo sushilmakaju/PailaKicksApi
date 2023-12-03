@@ -4,21 +4,21 @@ from .models import *
 
 class ProductSerializers(serializers.ModelSerializer):
     class Meta:
-        models = Product
+        model = Product
         fields = '__all__'
         
 class BrandSerializers(serializers.ModelSerializer):
     class Meta:
-        models = Brand
+        model = Brand
         fields = '__all__'
 
 class Product_BrandSerializers(serializers.ModelSerializer):
     class Meta:
-        models = Product_Brand
+        model = Product_Brand
         fields = '__all__'
     
 class ProductImageSerializers(serializers.ModelSerializer):
     class Meta:
-        models = ProductImage
+        model = ProductImage
         fields = '__all__'
         

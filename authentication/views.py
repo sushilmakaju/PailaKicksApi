@@ -10,6 +10,7 @@ from core.customrespose import *
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.hashers import make_password
 
 
 response = CustomResponse()
@@ -23,8 +24,12 @@ class LoginApi(APIView):
         
         if auth:
             token, _ = Token.objects.get_or_create(user=auth)
-            return Response(response.successResponse("You have logged in successfully", {"token": token.key}), status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+            user_id = auth.id
+            response_data = {"token": token.key, 
+                             "user_id": user_id
+                            }
+            return Response(response.successResponse("You have logged in successfully", response_data), status=status.HTTP_200_OK)
+        return Response(response.errorResponse('Invalid credentials'), status=status.HTTP_401_UNAUTHORIZED)
     
 class UserAPiView(APIView):
         
@@ -51,7 +56,9 @@ class UserAPiView(APIView):
     def post(self, request):       
         user_serializer = UsersSeriallizers(data=request.data)
         
-        if user_serializer.is_valid():
+        if user_serializer.is_valid():            
+            hashed_password = make_password(request.data['password'])
+            user_serializer.validated_data['password'] = hashed_password
             user_serializer.save()
             response_data = {
                 'data' : user_serializer.data
@@ -131,15 +138,16 @@ class LogoutApiView(APIView):
 
 
 class changepasswordapiview(APIView):
+    global response
     
-     def post(self, request):
+    def post(self, request):
         serializer = ChangePasswordSerializers(data=request.data)
         if serializer.is_valid():
             password = serializer.validated_data['password']
             password2 = serializer.validated_data['password2']
 
             if password != password2:
-                return Response({'error': 'Password and Confirm Password do not match'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(response.errorResponse, status=status.HTTP_400_BAD_REQUEST)
 
             user = request.user  
             user.set_password(password)
