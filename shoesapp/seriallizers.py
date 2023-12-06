@@ -7,18 +7,4 @@ class ProductSerializers(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
         
-class BrandSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = Brand
-        fields = '__all__'
 
-class Product_BrandSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = Product_Brand
-        fields = '__all__'
-    
-class ProductImageSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = ProductImage
-        fields = '__all__'
-        

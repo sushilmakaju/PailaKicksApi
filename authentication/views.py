@@ -25,9 +25,10 @@ class LoginApi(APIView):
         if auth:
             token, _ = Token.objects.get_or_create(user=auth)
             user_id = auth.id
-            response_data = {"token": token.key, 
-                             "user_id": user_id
-                            }
+            response_data = {
+                "user_id": user_id,
+                "token": token.key, 
+                }
             return Response(response.successResponse("You have logged in successfully", response_data), status=status.HTTP_200_OK)
         return Response(response.errorResponse('Invalid credentials'), status=status.HTTP_401_UNAUTHORIZED)
     
@@ -90,7 +91,7 @@ class UserAPiView(APIView):
         
 class AddressApiView(APIView):
     
-    serializer = AddressSerialzers
+    serializer_class = AddressSerialzers
     
     def get(self, request):
         address_obj = Address.objects.all()
