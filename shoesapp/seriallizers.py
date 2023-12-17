@@ -7,4 +7,12 @@ class ProductSerializers(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
         
+class CartSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Cart
+        fields = '__all__'
 
+class Product_cartSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Product_cart
+        fields = '__all__'
