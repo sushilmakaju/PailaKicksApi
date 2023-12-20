@@ -5,26 +5,44 @@ from rest_framework import status
 from .models import *
 from .seriallizers import *
 from core .customrespose import CustomResponse
+from core .custompagination import CustomPagination
+from rest_framework.permissions import IsAuthenticated
 
 response = CustomResponse()
 
 
 class ProductAiView(APIView):
     global response
+    pagination_class = CustomPagination
+   
     def get(self, request, pk=None):
+    
         if pk:
-            produt_model = Product.objects.get(id=pk)
-            if produt_model:
-                product_serializers = ProductSerializers(produt_model)
-                return Response(response.successResponse('data view', product_serializers.data), status=status.HTTP_200_OK)
-            return Response(response.errorResponse('NO-data found'), status=status.HTTP_400_BAD_REQUEST)
+            product_model = Product.objects.get(id=pk)
+            if product_model:
+                product_serializer = ProductSerializers(product_model)
+                return Response(response.successResponse('data view', product_serializer.data), status=status.HTTP_200_OK)
+            return Response(response.errorResponse('No data found'), status=status.HTTP_400_BAD_REQUEST)
             
         else: 
-            product_model= Product.objects.all()
-            product_serializers = ProductSerializers(product_model, many=True)
-            if product_serializers:
-                return Response(response.successResponse('data view', product_serializers.data), status=status.HTTP_200_OK)
+            product_model = Product.objects.all()
+            
+            if product_model:  
+                paginator = self.pagination_class()
+                paginated_queryset = paginator.paginate_queryset(product_model, request)
+                
+                product_serializer = ProductSerializers(paginated_queryset, many=True)
+                
+                response_data = {
+                    'next': paginator.get_next_link(),
+                    'previous': paginator.get_previous_link(),
+                    'count': paginator.page.paginator.count,    
+                    'data': product_serializer.data
+                }
+                
+                return Response(response.successResponse('data view', response_data), status=status.HTTP_200_OK)
             return Response(response.errorResponse('No data found'), status=status.HTTP_400_BAD_REQUEST)
+
         
     def post(self, request): 
         product_serilizers = ProductSerializers(data=request.data)
@@ -55,7 +73,8 @@ class ProductAiView(APIView):
 class CartApiView(APIView):
     
     global response
-    
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
     def get (self, request, pk=None):
         if pk:
             cart_obj = Cart.objects.get(id=pk)
@@ -65,34 +84,47 @@ class CartApiView(APIView):
             return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
         else:
             cart_object = Cart.objects.all()
-            cart_serializer = CartSerializers(cart_object, many=True)
-            if cart_serializer:
-                return Response(response.successResponse('Data View', cart_serializer.data), status=status.HTTP_200_OK)
+            
+            if cart_object:
+                paginator = self.pagination_class()
+                paginated_queryset = paginator.paginate_queryset(cart_object, request)
+                
+                cart_serializer = CartSerializers(cart_object, many=True)
+                response_data = {
+                    'next': paginator.get_next_link(),
+                    'previous': paginator.get_previous_link(),
+                    'count': paginator.page.paginator.count,    
+                    'data': cart_serializer.data
+                }
+                
+                return Response(response.successResponse('Data View', response_data), status=status.HTTP_200_OK)
             return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
             
        
     def post(self, request):
-        cart_serilizsers = CartSerializers(data=request.data)
+        cart_serializers = CartSerializers(data=request.data)
+        product_id = request.data.get('product_id')
+        # user_id = request.user.id
+        # print(user_id)
 
-        if cart_serilizsers.is_valid():
-            cart = cart_serilizsers.save()
-            product_id = request.data.get('product_id')
+        if cart_serializers.is_valid():
+            cart = cart_serializers.save()
+            price = Product.objects.get(id=product_id)
+            # print(price.product_name)
 
-            # Create a dictionary with default values for ProductCart
             product_cart_data = {
                 'product_id': product_id,
+                'product_name' : price.product_name,
                 'cart_id': cart.id,
-                'user_id': cart.user_id.id,
-                'quantity': 0,  # Set to a default quantity
-                'price': 0  # Set to a default price
+                'user_id': request.user.id, 
+                'quantity': 1,  
+                'price': price.product_price  
             }
 
             product_cart_serializer = Product_cartSerializers(data=product_cart_data)
 
             if product_cart_serializer.is_valid():
                 product_cart_serializer.save()
-                
-                # Prepare a response with cart and product_cart data
                 response_data = {
                     'cart_data': CartSerializers(cart).data,
                     'product_cart_data': Product_cartSerializers(product_cart_serializer.instance).data
@@ -101,11 +133,11 @@ class CartApiView(APIView):
                 return Response(response.successResponse('Data created', response_data), status=status.HTTP_201_CREATED)
 
             # If there are validation errors, you may want to log them for debugging purposes
-            print("Product Cart Validation Errors:", product_cart_serializer.errors)
+            # print("Product Cart Validation Errors:", product_cart_serializer.errors)
             cart.delete()
 
         # If Cart serialization fails, return validation errors
-        return Response(response.errorResponse('Validation error', cart_serilizsers.errors), status=status.HTTP_400_BAD_REQUEST)
+        return Response(response.errorResponse('Validation error', cart_serializers.errors), status=status.HTTP_400_BAD_REQUEST)
 
     
     def put(self, request, pk):
