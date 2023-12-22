@@ -15,7 +15,7 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=200)
     middle_name = models.CharField(max_length=200, null=True, blank=True)
     last_name = models.CharField(max_length=200)
-    username = models.CharField(max_length=200, default='User')
+    username = models.CharField(max_length=200, unique=True, null=True, blank=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=200)
     password = models.CharField(max_length=200)
@@ -28,4 +28,4 @@ class User(AbstractUser):
         return self.first_name
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = []

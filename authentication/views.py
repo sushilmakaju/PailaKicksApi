@@ -1,4 +1,4 @@
-
+from rest_framework.permissions import AllowAny
 from django.shortcuts import render
 from django.contrib.auth import logout, authenticate
 from rest_framework.response import Response
@@ -33,7 +33,7 @@ class LoginApi(APIView):
         return Response(response.errorResponse('Invalid credentials'), status=status.HTTP_401_UNAUTHORIZED)
     
 class UserAPiView(APIView):
-        
+    permission_classes = [AllowAny]
     def get(self, request, pk=None):
         if pk is None:       
             user_obj = User.objects.all()
@@ -54,19 +54,19 @@ class UserAPiView(APIView):
                 return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
    
     
-    def post(self, request):       
-        user_serializer = UsersSeriallizers(data=request.data)
+    # def post(self, request):       
+    #     user_serializer = UsersSeriallizers(data=request.data)
         
-        if user_serializer.is_valid():            
-            hashed_password = make_password(request.data['password'])
-            user_serializer.validated_data['password'] = hashed_password
-            user_serializer.save()
-            response_data = {
-                'data' : user_serializer.data
-            }
-            return Response(response.successResponse("data view", response_data), status=status.HTTP_201_CREATED)           
-        else:
-            return Response(response.errorResponse("HTTP_400_BAD_REQUEST", user_serializer.errors), status=status.HTTP_400_BAD_REQUEST)
+    #     if user_serializer.is_valid():            
+    #         hashed_password = make_password(request.data['password'])
+    #         user_serializer.validated_data['password'] = hashed_password
+    #         user_serializer.save()
+    #         response_data = {
+    #             'data' : user_serializer.data
+    #         }
+    #         return Response(response.successResponse("data view", response_data), status=status.HTTP_201_CREATED)           
+    #     else:
+    #         return Response(response.errorResponse("HTTP_400_BAD_REQUEST", user_serializer.errors), status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request, pk):        
         try:
@@ -157,7 +157,21 @@ class changepasswordapiview(APIView):
             return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-
+class UserRegistrationAPi(APIView):
+    global response
+    permission_classes = [AllowAny]
+    def post(self, request):
+        reg_serializers = UserRegistrationSerializer(data=request.data)
+        if reg_serializers.is_valid():
+            # hashed_password = make_password(request.data['password'])
+            # reg_serializers.validated_data['password'] = hashed_password
+            reg_serializers.save()
+            response_data = {
+                "data" : reg_serializers.data
+            }
+            return Response(response.successResponse("Data created", response_data), status=status.HTTP_201_CREATED)
+        else:
+            return Response(response.errorResponse('Error Creating data',reg_serializers.errors),status=status.HTTP_400_BAD_REQUEST)
     
 
 
