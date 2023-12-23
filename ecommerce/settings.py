@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'corsheaders',
     
     'drf_yasg',
+    
+    'djongo',
 ]
 
 MIDDLEWARE = [
