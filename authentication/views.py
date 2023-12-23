@@ -95,14 +95,14 @@ class AddressApiView(APIView):
     
     def get(self, request):
         address_obj = Address.objects.all()
-        address_serializer = self.serializer(address_obj, many=True)
+        address_serializer = self.serializer_class(address_obj, many=True)
         if address_obj:
             return Response(response.successResponse('data view',address_serializer.data), status=status.HTTP_200_OK)
         else:
             return Response(response.errorResponse('No Data Found'), status=status.HTTP_404_NOT_FOUND)
         
     def post(self, request):
-        address_serialier = self.serializer(data=request.data)
+        address_serialier = self.serializer_class(data=request.data)
         if address_serialier.is_valid():
             address_serialier.save()
             return Response(response.successResponse('data created',address_serialier.data), status=status.HTTP_201_CREATED)
@@ -121,7 +121,7 @@ class AddressApiView(APIView):
             address_obj = Address.objects.get(id=pk)
         except:
             return Response(response.errorResponse('No data found'),status=status.HTTP_404_NOT_FOUND)
-        adress_serialier = self.serializer(address_obj, data=request.data)
+        adress_serialier = self.serializer_class(address_obj, data=request.data)
         if adress_serialier.is_valid():
             adress_serialier.save()
             return Response(response.successResponse('data updated',adress_serialier.data), status=status.HTTP_201_CREATED)

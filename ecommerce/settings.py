@@ -88,12 +88,35 @@ WSGI_APPLICATION = 'ecommerce.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+from urllib.parse import quote_plus
+
+# Your MongoDB credentials
+username = 'sushilmakaju10'
+password = 'Born@030125!'
+
+# Encode the credentials
+encoded_username = quote_plus(username)
+encoded_password = quote_plus(password)
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'djongo',
+        'ENFORCE_SCHEMA': False,
+        'CLIENT': {
+            'host': f'mongodb+srv://{encoded_username}:{encoded_password}@cluster0.gtxsgoq.mongodb.net/?retryWrites=true&w=majority',
+            'authSource': 'admin',
+        }
     }
 }
+
+
 
 
 # Password validation
