@@ -6,7 +6,7 @@ class Product(models.Model):
     product_name = models.CharField(max_length=200)
     product_category = models.CharField(max_length=200)
     product_image = models.ImageField(null=True, blank=True)
-    product_size = models.IntegerField()
+    product_size = models.CharField(max_length=200)
     product_quantity = models.IntegerField()
     description = models.CharField(max_length=200)
     product_brand = models.CharField(max_length=200)

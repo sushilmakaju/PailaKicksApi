@@ -7,7 +7,7 @@ from .seriallizers import *
 from core .customrespose import CustomResponse
 from core .custompagination import CustomPagination
 from rest_framework.permissions import IsAuthenticated
-
+from authentication .models import User
 response = CustomResponse()
 
 
@@ -101,44 +101,75 @@ class CartApiView(APIView):
             return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
             
        
+   
     def post(self, request):
         cart_serializers = CartSerializers(data=request.data)
         product_id = request.data.get('product_id')
-        # user_id = request.user.id
-        # print(user_id)
+        quantity = request.data.get('quantity')  
 
-        if cart_serializers.is_valid():
-            cart = cart_serializers.save()
-            price = Product.objects.get(id=product_id)
-            # print(price.product_name)
+        existing_cart = Cart.objects.filter(user_id=request.user.id).first()
 
-            product_cart_data = {
-                'product_id': product_id,
-                'product_name' : price.product_name,
-                'cart_id': cart.id,
-                'user_id': request.user.id, 
-                'quantity': 1,  
-                'price': price.product_price  
-            }
+        if existing_cart:
+            try:
+                price = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                return Response(response.errorResponse('Product not found'), status=status.HTTP_404_NOT_FOUND)
 
-            product_cart_serializer = Product_cartSerializers(data=product_cart_data)
+            if price.product_quantity >= quantity:
+                product_cart_data = {
+                    'product_id': product_id,
+                    'product_name': price.product_name,
+                    'cart_id': existing_cart.id,
+                    'user_id': request.user.id,
+                    'quantity': quantity,
+                    'price': price.product_price*quantity
+                }
+                product_cart_serializer = Product_cartSerializers(data=product_cart_data)
 
-            if product_cart_serializer.is_valid():
-                product_cart_serializer.save()
-                response_data = {
-                    'cart_data': CartSerializers(cart).data,
-                    'product_cart_data': Product_cartSerializers(product_cart_serializer.instance).data
+                if product_cart_serializer.is_valid():
+                    product_cart_serializer.save()
+                    price.product_quantity -= quantity
+                    price.save()
+
+                    response_data = {
+                        'cart_data': CartSerializers(existing_cart).data,
+                        'product_cart_data': Product_cartSerializers(product_cart_serializer.instance).data
+                    }
+
+                    return Response(response.successResponse('Data added to existing cart', response_data),
+                                    status=status.HTTP_201_CREATED)
+
+            return Response(response.errorResponse('Insufficient product quantity'), status=status.HTTP_400_BAD_REQUEST)
+        else:
+            cart_serializers = CartSerializers(data=request.data)
+
+            if cart_serializers.is_valid():
+                cart = cart_serializers.save()
+                price = Product.objects.get(id=product_id)
+
+                product_cart_data = {
+                    'product_id': product_id,
+                    'product_name': price.product_name,
+                    'cart_id': cart.id,
+                    'user_id': request.user.id,
+                    'quantity': 1,
+                    'price': price.product_price
                 }
 
-                return Response(response.successResponse('Data created', response_data), status=status.HTTP_201_CREATED)
+                product_cart_serializer = Product_cartSerializers(data=product_cart_data)
 
-            # If there are validation errors, you may want to log them for debugging purposes
-            # print("Product Cart Validation Errors:", product_cart_serializer.errors)
-            cart.delete()
+                if product_cart_serializer.is_valid():
+                    product_cart_serializer.save()
 
-        # If Cart serialization fails, return validation errors
-        return Response(response.errorResponse('Validation error', cart_serializers.errors), status=status.HTTP_400_BAD_REQUEST)
+                    response_data = {
+                        'cart_data': CartSerializers(cart).data,
+                        'product_cart_data': Product_cartSerializers(product_cart_serializer.instance).data
+                    }
+                    return Response(response.successResponse('Data created with new cart', response_data),status=status.HTTP_201_CREATED)
+                cart.delete()
+            return Response(response.errorResponse('Validation error', cart_serializers.errors), status=status.HTTP_400_BAD_REQUEST)
 
+        return Response(response.errorResponse('Unable to add product to cart'), status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request, pk):
         
