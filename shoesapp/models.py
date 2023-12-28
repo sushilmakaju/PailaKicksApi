@@ -20,6 +20,7 @@ class Cart(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+    orderstats = models.BooleanField(default=False)
     
 
 class Product_cart(models.Model):
@@ -28,3 +29,4 @@ class Product_cart(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     quantity = models.IntegerField()
     price = models.IntegerField()
+    orderstats = models.BooleanField(default=False)
