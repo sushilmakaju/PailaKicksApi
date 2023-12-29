@@ -8,6 +8,8 @@ from core .customrespose import CustomResponse
 from core .custompagination import CustomPagination
 from rest_framework.permissions import IsAuthenticated
 from authentication .models import User
+from rest_framework.permissions import AllowAny
+
 response = CustomResponse()
 
 
@@ -89,7 +91,8 @@ class CartApiView(APIView):
                 paginator = self.pagination_class()
                 paginated_queryset = paginator.paginate_queryset(cart_object, request)
                 
-                cart_serializer = CartSerializers(cart_object, many=True)
+                cart_serializer = CartSerializers(paginated_queryset, many=True)
+                
                 response_data = {
                     'next': paginator.get_next_link(),
                     'previous': paginator.get_previous_link(),
@@ -120,12 +123,14 @@ class CartApiView(APIView):
                 product_cart = Product_cart.objects.filter(cart_id=existing_cart.id,product_id=product_id).first()
     
                 if product_cart:
-                    # If the product is already in the cart, update the quantity and price
-                    product_cart.quantity += quantity
-                    product_cart.price += price.product_price * quantity
-                    # product_cart.orderstats = False  # Set ordered to False
-                    product_cart.save()
-                
+                    if not product_cart.orderstats:
+                        # If the product is already in the cart, update the quantity and price
+                        product_cart.quantity += quantity
+                        product_cart.price += price.product_price * quantity
+                        # product_cart.orderstats = False  # Set ordered to False
+                        product_cart.save()
+                    else:
+                        return Response(response.errorResponse('Product already ordered'), status=status.HTTP_400_BAD_REQUEST)
                 else:
                     # If the product is not in the cart, create a new ProductCart
                     product_cart_data = {
@@ -213,7 +218,7 @@ class CartApiView(APIView):
 
 class Product_cartApiView(APIView):
     global response
-    
+    pagination_class = CustomPagination
     def get(self, request, pk=None):
         if pk:
             product_cart_obj = Product_cart.objects.get(id=pk)
@@ -224,9 +229,20 @@ class Product_cartApiView(APIView):
                 return Response(response.errorResponse('no data found'), status=status.HTTP_404_NOT_FOUND)
         else:
             productcart = Product_cart.objects.filter(orderstats=False)
-            product_cart_seriliser = Product_cartSerializers(productcart, many=True)
-            if product_cart_seriliser:
-                return Response(response.successResponse('data view', product_cart_seriliser.data), status=status.HTTP_200_OK)
+            if productcart:
+                paginator = self.pagination_class()
+                paginated_queryset = paginator.paginate_queryset(productcart, request)
+                
+                product_serializer = Product_cartSerializers(paginated_queryset, many=True)
+                
+                response_data = {
+                    'next': paginator.get_next_link(),
+                    'previous': paginator.get_previous_link(),
+                    'count': paginator.page.paginator.count,    
+                    'data': product_serializer.data
+                }
+                
+                return Response(response.successResponse('data view', response_data), status=status.HTTP_200_OK)
             return Response(response.errorResponse('no data found'), status=status.HTTP_404_NOT_FOUND)
                 
     def post(self, request):
@@ -253,3 +269,34 @@ class Product_cartApiView(APIView):
             productcart_obj.delete()
             return Response(response.successResponse('Data deleted'), status=status.HTTP_204_NO_CONTENT)
         return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
+    
+    
+class OrderApiView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = request.user  # Assuming you are using authentication and have access to the current user
+
+        # Get product cart items with orderstats=False for the current user
+        product_cart_items = Product_cart.objects.filter(user_id=user, orderstats=False)
+
+        if product_cart_items.exists():
+            # Create a new order
+            order = Order.objects.create(user=user)
+
+            # Associate the product cart items with the order
+            order.order_items.set(product_cart_items)
+
+            # Update orderstats for the associated product cart items
+            product_cart_items.update(orderstats=True)
+
+            # Update order status if needed
+            order.order_status = 'Shipping'  # Adjust as per your workflow
+            order.save()
+
+            # Serialize the order details for the response
+            order_serializer = OrderSerializers(order)
+
+            return Response({'message': 'Order placed successfully', 'order': order_serializer.data}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'error': 'No product cart items to place an order'}, status=status.HTTP_400_BAD_REQUEST)
+ 

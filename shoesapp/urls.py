@@ -11,4 +11,6 @@ urlpatterns = [
     path('product-cart/', Product_cartApiView.as_view(), name="productcart"), 
     path('product-cart/<int:pk>/', Product_cartApiView.as_view(), name="productcart"), 
     
+    path('order/', OrderApiView.as_view(), name="order-api-view")
+    
 ]
