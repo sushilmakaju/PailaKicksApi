@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 AUTH_USER_MODEL = 'authentication.User'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     
     'rest_framework',
     
+    'django_filters',
+    
     'authentication',
     
     'shoesapp',
@@ -51,13 +53,14 @@ INSTALLED_APPS = [
     
     'drf_yasg',
     
-    'djongo',
+    
+   
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-        'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -97,31 +100,6 @@ DATABASES = {
     }
 }
 
-# from urllib.parse import quote_plus
-
-# # Your MongoDB credentials
-# username = 'sushilmakaju10'
-# password = 'Born@030125!'
-
-# # Encode the credentials
-# encoded_username = quote_plus(username)
-# encoded_password = quote_plus(password)
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'ENFORCE_SCHEMA': False,
-#         'CLIENT': {
-#             'host': f'mongodb+srv://{encoded_username}:{encoded_password}@cluster0.gtxsgoq.mongodb.net/?retryWrites=true&w=majority',
-#             'authSource': 'admin',
-#             # 'ssl': True,
-#         }
-#     }
-# }
-
-
-
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -156,7 +134,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-import os
+
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # Default primary key field type
@@ -165,14 +143,19 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-}
 
 MEDIA_URL = '/images/'
 MEDIA_ROOT = BASE_DIR / "images"
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter'
+    ],
+}

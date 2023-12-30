@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from rest_framework.views import APIView
+from rest_framework.views import  APIView
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import *
@@ -9,14 +10,19 @@ from core .custompagination import CustomPagination
 from rest_framework.permissions import IsAuthenticated
 from authentication .models import User
 from rest_framework.permissions import AllowAny
+# from django_filters.rest_framework import DjangoFilterBackend
+
 
 response = CustomResponse()
 
 
-class ProductAiView(APIView):
+class ProductAiView(GenericAPIView):
     global response
-    pagination_class = CustomPagination
-   
+    pagination_class = CustomPagination()
+
+    filterset_fields = ["id"]
+    search_fields = ["product_name"]
+    
     def get(self, request, pk=None):
     
         if pk:
@@ -28,10 +34,12 @@ class ProductAiView(APIView):
             
         else: 
             product_model = Product.objects.all()
+            product_filter = self.filter_queryset(product_model)
             
             if product_model:  
-                paginator = self.pagination_class()
-                paginated_queryset = paginator.paginate_queryset(product_model, request)
+                
+                paginator = self.pagination_class
+                paginated_queryset = paginator.paginate_queryset(product_filter, request)
                 
                 product_serializer = ProductSerializers(paginated_queryset, many=True)
                 
@@ -72,11 +80,13 @@ class ProductAiView(APIView):
             return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
                 
         
-class CartApiView(APIView):
+class CartApiView(GenericAPIView):
     
     global response
     permission_classes = [IsAuthenticated]
-    pagination_class = CustomPagination
+    pagination_class = CustomPagination()
+    filterset_fields = ["id"]
+    
     def get (self, request, pk=None):
         if pk:
             cart_obj = Cart.objects.get(id=pk)
@@ -86,10 +96,11 @@ class CartApiView(APIView):
             return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
         else:
             cart_object = Cart.objects.all()
+            cart_filter = self.filter_queryset(cart_object)
             
             if cart_object:
-                paginator = self.pagination_class()
-                paginated_queryset = paginator.paginate_queryset(cart_object, request)
+                paginator = self.pagination_class
+                paginated_queryset = paginator.paginate_queryset(cart_filter, request)
                 
                 cart_serializer = CartSerializers(paginated_queryset, many=True)
                 
@@ -218,7 +229,9 @@ class CartApiView(APIView):
 
 class Product_cartApiView(APIView):
     global response
-    pagination_class = CustomPagination
+    pagination_class = CustomPagination()
+
+    
     def get(self, request, pk=None):
         if pk:
             product_cart_obj = Product_cart.objects.get(id=pk)
@@ -228,9 +241,9 @@ class Product_cartApiView(APIView):
                     return Response(response.successResponse('data view', productcart_serillizers.data), status=status.HTTP_200_OK)
                 return Response(response.errorResponse('no data found'), status=status.HTTP_404_NOT_FOUND)
         else:
-            productcart = Product_cart.objects.filter(orderstats=False)
+            productcart = Product_cart.objects.filter(orderstats=False)            
             if productcart:
-                paginator = self.pagination_class()
+                paginator = self.pagination_class
                 paginated_queryset = paginator.paginate_queryset(productcart, request)
                 
                 product_serializer = Product_cartSerializers(paginated_queryset, many=True)
