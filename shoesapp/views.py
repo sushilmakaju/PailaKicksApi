@@ -227,7 +227,7 @@ class CartApiView(GenericAPIView):
             return Response(response.successResponse('Data deleted'), status=status.HTTP_204_NO_CONTENT)
         return Response(response.errorResponse('No Data found'), status=status.HTTP_404_NOT_FOUND)
 
-class Product_cartApiView(APIView):
+class Product_cartApiView(GenericAPIView):
     global response
     pagination_class = CustomPagination()
 
@@ -241,10 +241,11 @@ class Product_cartApiView(APIView):
                     return Response(response.successResponse('data view', productcart_serillizers.data), status=status.HTTP_200_OK)
                 return Response(response.errorResponse('no data found'), status=status.HTTP_404_NOT_FOUND)
         else:
-            productcart = Product_cart.objects.filter(orderstats=False)            
+            productcart = Product_cart.objects.filter(orderstats=False)  
+            productcart_filter = self.filter_queryset(productcart)          
             if productcart:
                 paginator = self.pagination_class
-                paginated_queryset = paginator.paginate_queryset(productcart, request)
+                paginated_queryset = paginator.paginate_queryset(productcart_filter, request)
                 
                 product_serializer = Product_cartSerializers(paginated_queryset, many=True)
                 
@@ -284,7 +285,7 @@ class Product_cartApiView(APIView):
         return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
     
     
-class OrderApiView(APIView):
+class OrderApiView(GenericAPIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
         user = request.user  # Assuming you are using authentication and have access to the current user
