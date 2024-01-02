@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth import logout, authenticate
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 from .models import *
 from .serilizers import *
 from core.customrespose import *
@@ -11,11 +11,12 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.hashers import make_password
+from core.custompagination import *
 
 
 response = CustomResponse()
 # Create your views here.
-class LoginApi(APIView):
+class LoginApi(GenericAPIView):
     
     def post(self, request):
         email = request.data.get('email')
@@ -26,22 +27,46 @@ class LoginApi(APIView):
             token, _ = Token.objects.get_or_create(user=auth)
             user_id = auth.id
             response_data = {
-                "user_id": user_id,
-                "token": token.key, 
-                }
+                "success": True,  # Adding the status field for success
+                "data": {
+                    "user_id": user_id,
+                    "token": token.key,
+                    # Add other user-related data here
+                },
+            }
             return Response(response.successResponse("You have logged in successfully", response_data), status=status.HTTP_200_OK)
-        return Response(response.errorResponse('Invalid credentials'), status=status.HTTP_401_UNAUTHORIZED)
+        
+        response_data = {
+            "success": False,  # Adding the status field for failure
+            "data": {},  # You can provide additional error details if needed
+            "message": 'Invalid credentials',
+        }
+        return Response(response.errorResponse(response_data), status=status.HTTP_401_UNAUTHORIZED)
     
-class UserAPiView(APIView):
-    permission_classes = [AllowAny]
+class UserAPiView(GenericAPIView):
+    filterset_fields = ['id', 'first_name','last_name', 'email', 'address']
+    search_fields = ['first_name', 'last_name', 'email']
+    permission_classes = [IsAuthenticated, AllowAny]
+    pagination_class = CustomPagination()
+    
     def get(self, request, pk=None):
         if pk is None:       
             user_obj = User.objects.all()
-            user_serializer = GetUsersSeriallizers(user_obj, many = True)   
-            response_data = {
-                'data' : user_serializer.data
-            }     
+            user_filter = self.filter_queryset(user_obj)
+               
             if user_obj:
+                paginator = self.pagination_class
+                paginated_queryset = paginator.paginate_queryset(user_filter, request)
+                
+                user_serializer = GetUsersSeriallizers(paginated_queryset, many=True)
+                
+                response_data = {
+                    'next': paginator.get_next_link(),
+                    'previous': paginator.get_previous_link(),
+                    'count': paginator.page.paginator.count,    
+                    'data': user_serializer.data
+                }
+                
                 return Response(response.successResponse("data view", response_data), status=status.HTTP_200_OK)
             else:
                 return Response(response.errorResponse('No data found'), status=status.HTTP_404_NOT_FOUND)
@@ -89,7 +114,7 @@ class UserAPiView(APIView):
             user_obj.delete()
             return Response(response.successResponse('Data Deleted'), status=status.HTTP_200_OK)
         
-class AddressApiView(APIView):
+class AddressApiView(GenericAPIView):
     
     serializer_class = AddressSerialzers
     
@@ -97,9 +122,19 @@ class AddressApiView(APIView):
         address_obj = Address.objects.all()
         address_serializer = self.serializer_class(address_obj, many=True)
         if address_obj:
-            return Response(response.successResponse('data view',address_serializer.data), status=status.HTTP_200_OK)
+            response_data ={
+                "success" : True,
+                "data" : address_serializer.data
+            }
+            return Response(response.successResponse('data view',response_data), status=status.HTTP_200_OK)
         else:
-            return Response(response.errorResponse('No Data Found'), status=status.HTTP_404_NOT_FOUND)
+            response_data={
+                "success" : False,
+                "data" : {
+                    "error" : "No data found"
+                }
+            }
+            return Response(response.errorResponse(response_data), status=status.HTTP_404_NOT_FOUND)
         
     def post(self, request):
         address_serialier = self.serializer_class(data=request.data)
@@ -128,7 +163,7 @@ class AddressApiView(APIView):
         else:
             return Response(response.errorResponse('validation error',adress_serialier.errors),status=status.HTTP_400_BAD_REQUEST)
             
-class LogoutApiView(APIView):
+class LogoutApiView(GenericAPIView):
 
     def get(self, request):
         user = request
@@ -138,7 +173,7 @@ class LogoutApiView(APIView):
     
 
 
-class changepasswordapiview(APIView):
+class changepasswordapiview(GenericAPIView):
     global response
     
     def post(self, request):
@@ -148,16 +183,31 @@ class changepasswordapiview(APIView):
             password2 = serializer.validated_data['password2']
 
             if password != password2:
-                return Response(response.errorResponse, status=status.HTTP_400_BAD_REQUEST)
+                response_data : {
+                    "success" : False,
+                    "data" : {
+                        "error":"error changing password"
+                    }
+                }
+                return Response(response.errorResponse(response_data), status=status.HTTP_400_BAD_REQUEST)
 
             user = request.user  
             user.set_password(password)
             user.save()
+            
+            response_data = {
+                "success": True,
+                "data": {
+                    "message": "Password changed successfully"
+                }
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
 
-            return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(response.errorResponse('Invalid input'), status=status.HTTP_400_BAD_REQUEST)
+
         
-class UserRegistrationAPi(APIView):
+        
+class UserRegistrationAPi(GenericAPIView):
     global response
     permission_classes = [AllowAny]
     def post(self, request):
@@ -167,11 +217,18 @@ class UserRegistrationAPi(APIView):
             # reg_serializers.validated_data['password'] = hashed_password
             reg_serializers.save()
             response_data = {
+                "success" : True,
                 "data" : reg_serializers.data
             }
             return Response(response.successResponse("Data created", response_data), status=status.HTTP_201_CREATED)
         else:
-            return Response(response.errorResponse('Error Creating data',reg_serializers.errors),status=status.HTTP_400_BAD_REQUEST)
+            response_data = {
+                "success" : False,
+                "data" : {
+                    "error" : "error creating data"
+                }
+            }
+            return Response(response.errorResponse(response_data),status=status.HTTP_400_BAD_REQUEST)
     
 
 

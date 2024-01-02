@@ -230,7 +230,7 @@ class CartApiView(GenericAPIView):
 class Product_cartApiView(GenericAPIView):
     global response
     pagination_class = CustomPagination()
-
+    filterset_fields = ["id"]
     
     def get(self, request, pk=None):
         if pk:
@@ -287,6 +287,7 @@ class Product_cartApiView(GenericAPIView):
     
 class OrderApiView(GenericAPIView):
     permission_classes = [IsAuthenticated]
+    filterset_fields = ["id"]
     def post(self, request):
         user = request.user  # Assuming you are using authentication and have access to the current user
 
